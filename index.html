@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Minds - Smart Water System</title>
+    <!-- Tailwind CSS for Modern UI -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js for Live Graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white">Team Nova Minds</h1>
+                <p class="text-xs text-slate-400">Smart Water Quality Monitoring</p>
+            </div>
+        </div>
+
+        <!-- STATUS BADGES -->
+        <div class="flex items-center space-x-3">
+            <div id="deviceStatusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="statusText" class="text-xs font-semibold text-emerald-400">ONLINE</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/50 text-xs text-slate-300">
+                Battery: <span id="batVal" class="font-bold text-cyan-400">--</span>V
+            </div>
+            <div class="px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/50 text-xs text-slate-300">
+                Efficiency: <span id="effVal" class="font-bold text-emerald-400">--</span>%
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl w-full mx-auto p-6 space-y-6 flex-grow">
+
+        <!-- STATUS BAR BANNER -->
+        <div id="alertBanner" class="hidden p-4 rounded-xl border bg-rose-500/10 border-rose-500/30 text-rose-300 text-sm font-medium flex items-center justify-between">
+            <span id="alertBannerText">Warning: High Impurities Detected!</span>
+            <span class="text-xs uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20">Critical Alert</span>
+        </div>
+
+        <!-- SINGLE ROW 3 SENSOR CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- CARD 1: TDS -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">TDS Level</h2>
+                        <span id="wqStatus" class="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-medium mt-1 inline-block">Normal</span>
+                    </div>
+                    <div class="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                    <div>
+                        <p class="text-xs text-slate-500">Input</p>
+                        <p class="text-xl font-bold text-slate-200"><span id="tdsIn">--</span> <span class="text-xs font-normal text-slate-400">ppm</span></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500">Output</p>
+                        <p class="text-xl font-bold text-blue-400"><span id="tdsOut">--</span> <span class="text-xs font-normal text-slate-400">ppm</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 2: TURBIDITY -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Turbidity</h2>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium mt-1 inline-block">Clarity Check</span>
+                    </div>
+                    <div class="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                    <div>
+                        <p class="text-xs text-slate-500">Input</p>
+                        <p class="text-xl font-bold text-slate-200"><span id="turbIn">--</span> <span class="text-xs font-normal text-slate-400">NTU</span></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500">Output</p>
+                        <p class="text-xl font-bold text-amber-400"><span id="turbOut">--</span> <span class="text-xs font-normal text-slate-400">NTU</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 3: TEMPERATURE -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1.5 h-full bg-purple-500"></div>
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Temperature</h2>
+                        <span class="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium mt-1 inline-block">Thermal</span>
+                    </div>
+                    <div class="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                    <div>
+                        <p class="text-xs text-slate-500">Input</p>
+                        <p class="text-xl font-bold text-slate-200"><span id="tempVal">--</span> <span class="text-xs font-normal text-slate-400">°C</span></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500">Status</p>
+                        <p class="text-sm font-semibold text-emerald-400 mt-1" id="statusLabel">Normal</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- REAL-TIME CHART SECTION -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Live Sensor Trend Stream</h3>
+                <span class="text-xs text-slate-500">Realtime Updates</span>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="sensorChart"></canvas>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-900">
+        Team Nova Minds Water Monitoring Intelligence • Secure Real-Time Interface
+    </footer>
+
+    <!-- JAVASCRIPT & FIREBASE SYNC -->
+    <script>
+        // ==========================================
+        // FIREBASE CONFIGURATION
+        // ==========================================
+        const firebaseConfig = {
+            databaseURL: "https://sih26040alert-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // Request Browser Notification Permission on Load
+        if (window.Notification && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        let alertTriggered = false; // Prevents spamming continuous notifications
+
+        // Chart Setup
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'TDS In', borderColor: '#3b82f6', data: [], tension: 0.3, borderWidth: 2, pointRadius: 0 },
+                    { label: 'TDS Out', borderColor: '#60a5fa', data: [], tension: 0.3, borderWidth: 2, pointRadius: 0 },
+                    { label: 'Turb In', borderColor: '#f59e0b', data: [], tension: 0.3, borderWidth: 2, pointRadius: 0 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }
+                },
+                plugins: { legend: { labels: { color: '#94a3b8' } } }
+            }
+        });
+
+        // Offline Detection Timer
+        let lastPacketTime = Date.now();
+        const OFFLINE_TIMEOUT = 10000; // 10 seconds
+
+        setInterval(() => {
+            const now = Date.now();
+            const badge = document.getElementById('deviceStatusBadge');
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+
+            if (now - lastPacketTime > OFFLINE_TIMEOUT) {
+                badge.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                text.innerText = "DEVICE OFFLINE";
+                text.className = "text-xs font-semibold text-rose-400";
+            }
+        }, 1000);
+
+        // Listen to Firebase Paths (`/water/...`)
+        const waterRef = db.ref('water');
+        waterRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                lastPacketTime = Date.now(); // Reset timeout
+
+                // Update Status Badge to Online
+                const badge = document.getElementById('deviceStatusBadge');
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+                badge.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+                text.innerText = "ONLINE";
+                text.className = "text-xs font-semibold text-emerald-400";
+
+                // Update Values
+                const tdsOutVal = Math.round(data.TDS_OUT || 0);
+                document.getElementById('tdsIn').innerText = Math.round(data.TDS_IN || 0);
+                document.getElementById('tdsOut').innerText = tdsOutVal;
+                document.getElementById('turbIn').innerText = Math.round(data.TURB_IN || 0);
+                document.getElementById('turbOut').innerText = Math.round(data.TURB_OUT || 0);
+                document.getElementById('tempVal').innerText = Number(data.TEMP || 0).toFixed(1);
+                document.getElementById('batVal').innerText = Number(data.battery || 0).toFixed(1);
+                document.getElementById('effVal').innerText = Number(data.efficiency || 0).toFixed(1);
+                
+                const wqStatus = data.STATUS || "SAFE TO DRINK";
+                document.getElementById('wqStatus').innerText = wqStatus;
+                document.getElementById('statusLabel').innerText = wqStatus;
+
+                // Handle Banner Alert and Push Notification if TDS Out > 500 or High Impurities
+                const banner = document.getElementById('alertBanner');
+                if (wqStatus.includes("HIGH") || tdsOutVal > 500) {
+                    banner.classList.remove('hidden');
+                    document.getElementById('alertBannerText').innerText = "Warning: High Impurities Detected (TDS > 500 ppm)!";
+
+                    // Trigger Push Notification if permitted and not already triggered
+                    if (!alertTriggered && window.Notification && Notification.permission === "granted") {
+                        new Notification("🚨 Nova Minds Critical Alert!", {
+                            body: "Warning: High water impurities detected! TDS Output is " + tdsOutVal + " ppm.",
+                            icon: "https://img.icons8.com/color/48/box-important.png"
+                        });
+                        alertTriggered = true; // Lock until status returns to normal
+                    }
+                } else {
+                    banner.classList.add('hidden');
+                    alertTriggered = false; // Reset lock when water is safe
+                }
+
+                // Update Chart
+                const timeLabel = new Date().toLocaleTimeString();
+                if (sensorChart.data.labels.length > 20) {
+                    sensorChart.data.labels.shift();
+                    sensorChart.data.datasets.forEach(dataset => dataset.data.shift());
+                }
+                sensorChart.data.labels.push(timeLabel);
+                sensorChart.data.datasets[0].data.push(data.TDS_IN || 0);
+                sensorChart.data.datasets[1].data.push(data.TDS_OUT || 0);
+                sensorChart.data.datasets[2].data.push(data.TURB_IN || 0);
+                sensorChart.update();
+            }
+        });
+    </script>
+</body>
+</html>
